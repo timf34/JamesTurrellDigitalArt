@@ -99,12 +99,14 @@ class GradientLightField {
 		  // Apply aspect ratio adjustment to create correct oval shape
 		  uv.x *= uAspectRatio;
 		  
-		  // Calculate stretched distance field (elliptical)
+		  // Calculate stretched distance field (rectangular with rounded corners)
 		  float verticalFactor = uv.y / uVerticalStretch;
 		  float horizontalFactor = uv.x / uHorizontalWidth;
 		  
-		  // Create a distance field that's more like an elongated oval
-		  float dist = sqrt(horizontalFactor * horizontalFactor + verticalFactor * verticalFactor);
+		  // Mix between elliptical and rectangular distance field for a softer rectangle effect
+		  float ellipticalDist = sqrt(horizontalFactor * horizontalFactor + verticalFactor * verticalFactor);
+		  float rectangularDist = max(abs(horizontalFactor), abs(verticalFactor));
+		  float dist = mix(ellipticalDist, rectangularDist, 0.3); // 0.3 gives a slightly rounded rectangle
 		  
 		  // Soften the gradient with feathering
 		  dist = smoothstep(0.0, 1.0 + uFeather, dist);
@@ -216,65 +218,73 @@ class GradientLightField {
   
   // Create the gradient when the page loads
   document.addEventListener('DOMContentLoaded', () => {
-	// Create the gradient with purple colors like in the example
+	// Create the gradient with peach/pink colors like in the example
 	const gradient = new GradientLightField({
 	  gradientColors: [
-		{ position: 0.0, color: '#8B6FC3' },  // Outer edge (deeper purple)
-		{ position: 0.5, color: '#C9B6E4' },  // Inner highlight (lighter purple)
-		{ position: 1.0, color: '#8B6FC3' }   // Outer edge again (deeper purple)
+		{ position: 0.0, color: '#FFFFFF' },  // Outer edge (white)
+		{ position: 0.3, color: '#FFC0AB' },  // Middle (peach/salmon)
+		{ position: 0.6, color: '#FFAA88' },  // Inner (deeper peach)
+		{ position: 0.8, color: '#FF9999' }   // Center (pink)
 	  ],
-	  aspectRatio: 0.5,      // Portrait orientation
-	  verticalStretch: 0.6,  // Elongated vertically
-	  horizontalWidth: 0.4,  // Narrow horizontally
-	  feather: 0.4,          // Soft edges
-	  intensity: 1.2         // Slightly brighter
+	  aspectRatio: 2.0,      // Landscape orientation
+	  verticalStretch: 0.4,  // Shorter vertically
+	  horizontalWidth: 0.8,  // Wider horizontally
+	  feather: 0.6,          // Softer edges
+	  intensity: 1.1         // Slightly brighter
 	});
 	
 	// Example functions to create different color schemes
-	const createPurpleGradient = () => {
+	const createPeachGradient = () => {
 	  gradient.updateColors([
-		{ position: 0.0, color: '#8B6FC3' },  // Outer edge (deeper purple)
-		{ position: 0.5, color: '#C9B6E4' },  // Inner highlight (lighter purple)
-		{ position: 1.0, color: '#8B6FC3' }   // Outer edge again (deeper purple)
-	  ]);
-	};
-	
-	const createPinkGradient = () => {
-	  gradient.updateColors([
-		{ position: 0.0, color: '#FF7BAC' },  // Outer edge (deeper pink)
-		{ position: 0.5, color: '#FFB3D1' },  // Inner highlight (lighter pink)
-		{ position: 1.0, color: '#FF7BAC' }   // Outer edge again (deeper pink)
+		{ position: 0.0, color: '#FFFFFF' },  // Outer edge (white)
+		{ position: 0.3, color: '#FFC0AB' },  // Middle (peach/salmon)
+		{ position: 0.6, color: '#FFAA88' },  // Inner (deeper peach)
+		{ position: 0.8, color: '#FF9999' }   // Center (pink)
 	  ]);
 	};
 	
 	const createBlueGradient = () => {
 	  gradient.updateColors([
-		{ position: 0.0, color: '#5F8DE8' },  // Outer edge (deeper blue)
-		{ position: 0.5, color: '#B6D0FF' },  // Inner highlight (lighter blue)
-		{ position: 1.0, color: '#5F8DE8' }   // Outer edge again (deeper blue)
+		{ position: 0.0, color: '#FFFFFF' },  // Outer edge (white)
+		{ position: 0.3, color: '#B6D0FF' },  // Middle (light blue)
+		{ position: 0.6, color: '#7BA6FF' },  // Inner (medium blue)
+		{ position: 0.8, color: '#5F8DE8' }   // Center (deeper blue)
+	  ]);
+	};
+	
+	const createGreenGradient = () => {
+	  gradient.updateColors([
+		{ position: 0.0, color: '#FFFFFF' },  // Outer edge (white)
+		{ position: 0.3, color: '#C1E6C0' },  // Middle (light green)
+		{ position: 0.6, color: '#90D18B' },  // Inner (medium green)
+		{ position: 0.8, color: '#6ABB67' }   // Center (deeper green)
 	  ]);
 	};
 	
 	// Optionally add UI controls or key handlers to switch between gradients
 	document.addEventListener('keydown', (e) => {
-	  if (e.key === 'p') createPurpleGradient();
-	  if (e.key === 'r') createPinkGradient();
+	  if (e.key === 'p') createPeachGradient();
 	  if (e.key === 'b') createBlueGradient();
+	  if (e.key === 'g') createGreenGradient();
 	  
 	  // Example for changing shape parameters
-	  if (e.key === '1') gradient.updateShape({ verticalStretch: 0.8 }); // More elongated
-	  if (e.key === '2') gradient.updateShape({ verticalStretch: 0.4 }); // More circular
-	  if (e.key === '3') gradient.updateShape({ horizontalWidth: 0.6 }); // Wider
-	  if (e.key === '4') gradient.updateShape({ horizontalWidth: 0.3 }); // Narrower
+	  if (e.key === '1') gradient.updateShape({ verticalStretch: 0.6 }); // More center height
+	  if (e.key === '2') gradient.updateShape({ verticalStretch: 0.3 }); // Less center height
+	  if (e.key === '3') gradient.updateShape({ horizontalWidth: 1.0 }); // Wider
+	  if (e.key === '4') gradient.updateShape({ horizontalWidth: 0.6 }); // Narrower
+	  if (e.key === '+') gradient.updateShape({ feather: Math.min(1.0, gradient.options.feather + 0.1) }); // Softer
+	  if (e.key === '-') gradient.updateShape({ feather: Math.max(0.1, gradient.options.feather - 0.1) }); // Sharper
 	});
 	
 	// Add instructions to the console
 	console.log("Gradient Light Field Controls:");
-	console.log("- Press 'p' for purple gradient");
-	console.log("- Press 'r' for pink gradient");
+	console.log("- Press 'p' for peach gradient (default)");
 	console.log("- Press 'b' for blue gradient");
-	console.log("- Press '1' for more elongated");
-	console.log("- Press '2' for more circular");
-	console.log("- Press '3' for wider");
-	console.log("- Press '4' for narrower");
+	console.log("- Press 'g' for green gradient");
+	console.log("- Press '1' for more center height");
+	console.log("- Press '2' for less center height");
+	console.log("- Press '3' for wider center");
+	console.log("- Press '4' for narrower center");
+	console.log("- Press '+' for softer edges");
+	console.log("- Press '-' for sharper edges");
   });
